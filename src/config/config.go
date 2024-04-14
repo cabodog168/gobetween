@@ -326,6 +326,7 @@ type ProbeHealthcheckConfig struct {
 	ProbeSend     string `toml:"probe_send" json:"probe_send"`
 	ProbeRecv     string `toml:"probe_recv" json:"probe_recv"`
 	ProbeRecvLen  int    `toml:"probe_recv_len" json:"probe_recv_len"`
+	ProbePort     int    `toml:"probe_port" json:"probe_port"`
 }
 
 type ExecHealthcheckConfig struct {
