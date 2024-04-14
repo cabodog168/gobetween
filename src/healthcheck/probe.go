@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/yyyar/gobetween/config"
@@ -26,7 +27,7 @@ func probe(t core.Target, cfg config.HealthcheckConfig, result chan<- CheckResul
 	timeout, _ := time.ParseDuration(cfg.Timeout)
 
 	checkResult := CheckResult{
-		Status:   Unhealthy,
+		Status: Unhealthy,
 		Target: t,
 	}
 
@@ -47,7 +48,15 @@ func probe(t core.Target, cfg config.HealthcheckConfig, result chan<- CheckResul
 			Timeout: timeout,
 		}, "tcp", t.Address(), &tls.Config{})
 	default:
-		conn, err = net.DialTimeout(cfg.ProbeProtocol, t.Address(), timeout)
+		address := t.Address()
+		if cfg.ProbePort > 0 && cfg.ProbePort <= 65535 {
+			probeTarget := core.Target{
+				Host: t.Host,
+				Port: strconv.Itoa(cfg.ProbePort),
+			}
+			address = probeTarget.Address()
+		}
+		conn, err = net.DialTimeout(cfg.ProbeProtocol, address, timeout)
 	}
 	if err != nil {
 		checkResult.Status = Unhealthy
@@ -93,7 +102,7 @@ func probe(t core.Target, cfg config.HealthcheckConfig, result chan<- CheckResul
 	}
 
 	actual := make([]byte, recvLen)
-	n, err = io.ReadFull(conn, actual)
+	_, err = io.ReadFull(conn, actual)
 	if err != nil {
 		log.Debugf("Could not read from backend: %v", err)
 		return
