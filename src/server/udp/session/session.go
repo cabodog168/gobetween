@@ -231,3 +231,10 @@ func (s *Session) Close() {
 	default:
 	}
 }
+
+func (s Session) GetTarget() core.Target {
+	return core.Target{
+		Host: s.backend.Host,
+		Port: s.backend.Port,
+	}
+}
