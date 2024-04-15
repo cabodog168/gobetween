@@ -20,6 +20,7 @@ import (
 	"github.com/yyyar/gobetween/discovery"
 	"github.com/yyyar/gobetween/healthcheck"
 	"github.com/yyyar/gobetween/logging"
+	"github.com/yyyar/gobetween/metrics"
 	"github.com/yyyar/gobetween/server/modules/access"
 	"github.com/yyyar/gobetween/server/scheduler"
 	"github.com/yyyar/gobetween/server/udp/session"
@@ -392,6 +393,8 @@ func (this *Server) proxy(cfg session.Config, clientAddr *net.UDPAddr, buf []byt
 		return
 	}
 
+	metrics.ReportBackendRequest(this.name, s.GetTarget(), clientAddr.IP.String())
+
 	err = s.Write(buf)
 	if err != nil {
 		log.Errorf("Could not write data to UDP 'session' %v: %v", s, err)
@@ -409,6 +412,8 @@ func (this *Server) fireAndForget(pool *connPool, clientAddr *net.UDPAddr, buf [
 	if err != nil {
 		return fmt.Errorf("Could not elect or connect to backend: %v", err)
 	}
+
+	metrics.ReportBackendRequest(this.name, backend.Target, clientAddr.IP.String())
 
 	n, err := conn.Write(buf)
 	if err != nil {

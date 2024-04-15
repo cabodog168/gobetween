@@ -42,6 +42,7 @@ var (
 	backendRxSecond           *prometheus.GaugeVec
 	backendTxSecond           *prometheus.GaugeVec
 	backendLive               *prometheus.GaugeVec
+	backendRequest            *prometheus.GaugeVec
 )
 
 func defineMetrics() {
@@ -153,6 +154,13 @@ func defineMetrics() {
 		Help:      "Backend Alive.",
 	}, []string{"server", "host", "port"})
 
+	backendRequest = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Subsystem: "backend",
+		Name:      "request",
+		Help:      "Backend Request.",
+	}, []string{"server", "host", "port", "client"})
+
 }
 
 func Start(cfg config.MetricsConfig) {
@@ -184,6 +192,7 @@ func Start(cfg config.MetricsConfig) {
 	prometheus.MustRegister(backendRxSecond)
 	prometheus.MustRegister(backendTxSecond)
 	prometheus.MustRegister(backendLive)
+	prometheus.MustRegister(backendRequest)
 
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
@@ -221,6 +230,7 @@ func RemoveBackend(server string, backend *core.Backend) {
 	backendRxSecond.DeleteLabelValues(server, backend.Host, backend.Port)
 	backendTxSecond.DeleteLabelValues(server, backend.Host, backend.Port)
 	backendLive.DeleteLabelValues(server, backend.Host, backend.Port)
+	backendRequest.DeleteLabelValues(server, backend.Host, backend.Port)
 }
 
 func ReportHandleBackendLiveChange(server string, target core.Target, live bool) {
@@ -234,6 +244,14 @@ func ReportHandleBackendLiveChange(server string, target core.Target, live bool)
 	}
 
 	backendLive.WithLabelValues(server, target.Host, target.Port).Set(float64(intLive))
+}
+
+func ReportBackendRequest(server string, target core.Target, clientIp string) {
+	if metricsDisabled {
+		return
+	}
+
+	backendRequest.WithLabelValues(server, target.Host, target.Port, clientIp).Add(1)
 }
 
 func ReportHandleConnectionsChange(server string, connections uint) {
